@@ -23,9 +23,9 @@ def create_sql_deep_agent():
     # Get base directory
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Connect to Chinook database
-    db_path = os.path.join(base_dir, "chinook.db")
-    db = SQLDatabase.from_uri(f"sqlite:///{db_path}", sample_rows_in_table_info=3)
+    # Connect to database via DATABASE_URL
+    database_url = os.environ["DATABASE_URL"]
+    db = SQLDatabase.from_uri(database_url, sample_rows_in_table_info=3)
 
     # Initialize Claude Sonnet 4.5 for toolkit initialization
     model = ChatAnthropic(model="claude-sonnet-4-5-20250929", temperature=0)
@@ -65,15 +65,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python agent.py "What are the top 5 best-selling artists?"
-  python agent.py "Which employee generated the most revenue by country?"
-  python agent.py "How many customers are from Canada?"
+  python agent.py "How many works are in the database?"
+  python agent.py "List all editions with their work titles and authors"
+  python agent.py "Find chunks containing the word 'guerre'"
         """,
     )
     parser.add_argument(
         "question",
         type=str,
-        help="Natural language question to answer using the Chinook database",
+        help="Natural language question to answer using the literary RAG database",
     )
 
     args = parser.parse_args()
