@@ -14,9 +14,9 @@ Use this skill when you need to answer a question by writing and executing a SQL
 1. **Understand the question** - What data is being requested?
 2. **Reference schema** - Invoke schema-reference skill if you need detailed table information
 3. **Write the query** - Construct syntactically correct PostgreSQL query
-4. **Validate** - Use sql_db_query_checker to validate syntax before execution
-5. **Execute** - Run with sql_db_query tool
-6. **Format answer** - Present results clearly to the user
+4. **Execute** - Run with sql_db_query tool
+5. **Answer immediately** - If the result answers the question, respond now. Do not query further.
+6. **On error only** - If a query fails, use sql_db_query_checker to diagnose, then rewrite and retry
 
 ## PostgreSQL Query Guidelines
 
