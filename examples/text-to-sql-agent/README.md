@@ -11,9 +11,9 @@ Deep Agents is a sophisticated agent framework built on LangGraph that provides:
 - **Subagent spawning** - Delegate specialized tasks to focused agents
 - **Context management** - Prevent context window overflow on complex tasks
 
-## Demo Database
+## Database
 
-Uses the [Chinook database](https://github.com/lerocha/chinook-database) - a sample database representing a digital media store.
+Connects to a PostgreSQL literary RAG database via `DATABASE_URL` environment variable. Contains works, editions, text chunks, semantic chunks, micro-units, and character dynamics.
 
 ## Quick Start
 
@@ -30,13 +30,6 @@ Uses the [Chinook database](https://github.com/lerocha/chinook-database) - a sam
 ```bash
 git clone https://github.com/langchain-ai/deepagents.git
 cd deepagents/examples/text-to-sql-agent
-```
-
-1. Download the Chinook database:
-
-```bash
-# Download the SQLite database file
-curl -L -o chinook.db https://github.com/lerocha/chinook-database/raw/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite
 ```
 
 1. Create a virtual environment and install dependencies:
@@ -59,6 +52,7 @@ Required in `.env`:
 
 ```
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+DATABASE_URL=postgresql://user:password@host:5432/dbname
 ```
 
 Optional:
@@ -77,15 +71,15 @@ LANGCHAIN_PROJECT=text2sql-deepagent
 Run the agent from the command line with a natural language question:
 
 ```bash
-python agent.py "What are the top 5 best-selling artists?"
+python agent.py "How many works are in the database?"
 ```
 
 ```bash
-python agent.py "Which employee generated the most revenue by country?"
+python agent.py "List all editions with their work titles and authors"
 ```
 
 ```bash
-python agent.py "How many customers are from Canada?"
+python agent.py "Find chunks containing the word 'guerre'"
 ```
 
 ### Programmatic Usage
@@ -100,7 +94,7 @@ agent = create_sql_deep_agent()
 
 # Ask a question
 result = agent.invoke({
-    "messages": [{"role": "user", "content": "What are the top 5 best-selling artists?"}]
+    "messages": [{"role": "user", "content": "How many works are in the database?"}]
 })
 
 print(result["messages"][-1].content)
@@ -116,18 +110,16 @@ User Question
 Deep Agent (with planning)
      ├─ write_todos (plan the approach)
      ├─ SQL Tools
-     │  ├─ list_tables
-     │  ├─ get_schema
-     │  ├─ query_checker
-     │  └─ execute_query
+     │  ├─ sql_db_query (execute query)
+     │  └─ sql_db_query_checker (validate syntax)
+     ├─ Skills (loaded on-demand)
+     │  ├─ schema-reference (complete schema docs)
+     │  └─ query-writing (query patterns and syntax)
      ├─ Filesystem Tools (optional)
-     │  ├─ ls
-     │  ├─ read_file
-     │  ├─ write_file
-     │  └─ edit_file
+     │  ├─ ls, read_file, write_file, edit_file
      └─ Subagent Spawning (optional)
      ↓
-SQLite Database (Chinook)
+PostgreSQL Database (literary RAG)
      ↓
 Formatted Answer
 ```
@@ -145,8 +137,8 @@ Deep Agents uses **progressive disclosure** with memory files and skills:
 
 **skills/** (loaded on-demand) - Specialized workflows:
 
-- **query-writing** - How to write and execute SQL queries (simple and complex)
-- **schema-exploration** - How to discover database structure and relationships
+- **query-writing** - How to write and execute SQL queries with PostgreSQL-specific syntax
+- **schema-reference** - Complete database schema documentation (tables, indexes, triggers, views)
 
 The agent sees skill descriptions in its context but only loads the full SKILL.md instructions when it determines which skill is needed for the current task. This **progressive disclosure** pattern keeps context efficient while providing deep expertise when needed.
 
@@ -155,7 +147,7 @@ The agent sees skill descriptions in its context but only loads the full SKILL.m
 ### Simple Query
 
 ```
-"How many customers are from Canada?"
+"How many works are in the database?"
 ```
 
 The agent will directly query and return the count.
@@ -163,15 +155,15 @@ The agent will directly query and return the count.
 ### Complex Query with Planning
 
 ```
-"Which employee generated the most revenue and from which countries?"
+"Which narrative threads appear most frequently across micro-units?"
 ```
 
 The agent will:
 
 1. Use `write_todos` to plan the approach
-2. Identify required tables (Employee, Invoice, Customer)
-3. Plan the JOIN structure
-4. Execute the query
+2. Invoke schema-reference skill for table structures
+3. Use `unnest(story_threads)` on micro_units table
+4. Aggregate and order by frequency
 5. Format results with analysis
 
 ## Deep Agent Output Example
@@ -179,26 +171,25 @@ The agent will:
 The Deep Agent shows its reasoning process:
 
 ```
-Question: Which employee generated the most revenue by country?
+Question: Which narrative threads appear most frequently?
 
 [Planning Step]
 Using write_todos:
-- [ ] List tables in database
-- [ ] Examine Employee and Invoice schemas
-- [ ] Plan multi-table JOIN query
-- [ ] Execute and aggregate by employee and country
-- [ ] Format results
+- [ ] Invoke schema-reference skill for micro_units schema
+- [ ] Write query using unnest on story_threads array
+- [ ] Validate with sql_db_query_checker
+- [ ] Execute and format results
 
 [Execution Steps]
-1. Listing tables...
-2. Getting schema for: Employee, Invoice, InvoiceLine, Customer
-3. Generating SQL query...
+1. Loading schema-reference skill...
+2. Writing query with unnest(story_threads)...
+3. Validating syntax...
 4. Executing query...
 5. Formatting results...
 
 [Final Answer]
-Employee Jane Peacock (ID: 3) generated the most revenue...
-Top countries: USA ($1000), Canada ($500)...
+The most frequent narrative thread is "relazione_lola" (4 occurrences),
+followed by "trauma_bellico", "misantropia", "critica_guerra" (3 each)...
 ```
 
 ## Project Structure
@@ -210,9 +201,10 @@ text-to-sql-agent/
 ├── skills/                       # Specialized workflows (loaded on-demand)
 │   ├── query-writing/
 │   │   └── SKILL.md             # SQL query writing workflow
-│   └── schema-exploration/
-│       └── SKILL.md             # Database structure discovery workflow
-├── chinook.db                    # Sample SQLite database (downloaded, gitignored)
+│   └── schema-reference/
+│       └── SKILL.md             # Complete database schema documentation
+├── tests/
+│   └── test_agent_configuration.py  # Automated configuration tests
 ├── pyproject.toml                # Project configuration and dependencies
 ├── uv.lock                       # Locked dependency versions
 ├── .env.example                  # Environment variable template
@@ -272,8 +264,6 @@ View your traces at: <https://smith.langchain.com/>
 - [Deep Agents Documentation](https://docs.langchain.com/oss/python/deepagents/overview)
 - [LangChain](https://www.langchain.com/)
 - [Claude Sonnet 4.5](https://www.anthropic.com/claude)
-- [Chinook Database](https://github.com/lerocha/chinook-database)
-
 ## License
 
 MIT

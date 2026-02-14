@@ -13,8 +13,8 @@ Given a natural language question, you will:
 
 ## Database Information
 
-- Database type: SQLite (Chinook database)
-- Contains data about a digital media store: artists, albums, tracks, customers, invoices, employees
+- Database type: PostgreSQL (literary RAG database)
+- Contains data about literary works, editions, text chunks, semantic chunks, micro-units, and character dynamics
 
 ## Query Guidelines
 
@@ -48,12 +48,11 @@ For complex analytical questions:
 
 ## Example Approach
 
-**Simple question:** "How many customers are from Canada?"
+**Simple question:** "How many works are in the database?"
 - Reference schema → Write query → Validate → Execute COUNT query
 
-**Complex question:** "Which employee generated the most revenue and from which countries?"
+**Complex question:** "Which narrative threads appear most frequently across micro-units?"
 - Use write_todos to plan
-- Examine Employee, Invoice, InvoiceLine, Customer tables
-- Join tables appropriately
-- Aggregate by employee and country
+- Invoke schema-reference skill for table structures
+- Use unnest on story_threads array, aggregate counts
 - Format results clearly
