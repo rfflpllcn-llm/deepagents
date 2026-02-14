@@ -16,6 +16,11 @@ dependencies = [
     "rich>=13.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
 [project.urls]
 Repository = "https://github.com/langchain-ai/deepagents/tree/main/examples/text-to-sql-agent"
 
