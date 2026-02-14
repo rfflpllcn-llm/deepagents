@@ -6,7 +6,7 @@ from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from langchain_community.agent_toolkits import SQLDatabaseToolkit
+from langchain_community.tools import QuerySQLCheckerTool, QuerySQLDatabaseTool
 from langchain_community.utilities import SQLDatabase
 from rich.console import Console
 from rich.panel import Panel
@@ -30,9 +30,18 @@ def create_sql_deep_agent():
     # Initialize Claude Sonnet 4.5 for toolkit initialization
     model = ChatAnthropic(model="claude-sonnet-4-5-20250929", temperature=0)
 
-    # Create SQL toolkit and get tools
-    toolkit = SQLDatabaseToolkit(db=db, llm=model)
-    sql_tools = toolkit.get_tools()
+    # Create only query execution and validation tools (no discovery tools)
+    sql_tools = [
+        QuerySQLDatabaseTool(
+            db=db,
+            description="Execute a SQL query against the database. Returns the query results."
+        ),
+        QuerySQLCheckerTool(
+            db=db,
+            llm=model,
+            description="Validate SQL query syntax before execution. Use this to check queries for errors."
+        )
+    ]
 
     # Create the Deep Agent with all parameters
     agent = create_deep_agent(
@@ -40,7 +49,7 @@ def create_sql_deep_agent():
         memory=["./AGENTS.md"],  # Agent identity and general instructions
         skills=[
             "./skills/"
-        ],  # Specialized workflows (query-writing, schema-exploration)
+        ],  # Specialized workflows (query-writing, schema-reference)
         tools=sql_tools,  # SQL database tools
         subagents=[],  # No subagents needed
         backend=FilesystemBackend(root_dir=base_dir),  # Persistent file storage
