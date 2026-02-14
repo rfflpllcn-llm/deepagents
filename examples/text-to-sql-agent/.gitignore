@@ -31,3 +31,4 @@ agent_workspace/
 # OS
 .DS_Store
 Thumbs.db
+.worktrees/
